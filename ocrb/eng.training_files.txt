@@ -1,0 +1,2 @@
+/home/ubuntu/tesstutorial/ocrb/eng.OCR-B_10_BT.exp0.lstmf
+/home/ubuntu/tesstutorial/ocrb/eng.OCR_B_MT.exp0.lstmf
