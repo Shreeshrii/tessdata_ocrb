@@ -11,7 +11,7 @@ time ~/tesseract/src/training/tesstrain.sh \
   --workspace_dir ~/tmp \
   --output_dir ~/tesstutorial/ocrb
 
-# https://github.com/tesseract-ocr/tesseract/wiki/TrainingTesseract-4.00#fine-tuning-for-ocrb
+# https://github.com/tesseract-ocr/tesseract/wiki/TrainingTesseract-4.00#fine-tuning-for-impact
 
 echo "/n ****** Finetune one of the fully-trained existing models: ***********"
 
