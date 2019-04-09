@@ -1,61 +1,110 @@
 #!/bin/bash
 
-time ~/tesseract/src/training/tesstrain.sh \
-  --fonts_dir ~/.fonts/win \
-  --lang eng --linedata_only \
-  --noextract_font_properties \
-  --langdata_dir ~/langdata \
-  --tessdata_dir ~/tessdata_best \
-  --exposures "-1 0 1" \
-  --save_box_tiff \
-  --fontlist "OCR B MT" "OCR-B 10 BT" \
-  --training_text ./eng.MRZ.training_text \
-  --workspace_dir ~/tmp \
-  --output_dir ~/tesstutorial/ocrb
+###rm -rf ./ocrb_eval
+###~/tesseract/src/training/tesstrain.sh \
+###  --fonts_dir ~/.fonts \
+###  --lang eng --linedata_only \
+###  --noextract_font_properties \
+###  --langdata_dir ~/langdata \
+###  --tessdata_dir ~/tessdata_best \
+###  --exposures "-1 0 1 2" \
+###  --save_box_tiff \
+###  --fontlist "Arial Unicode MS" "OCRB" "OCR B MT" "OCR-B 10 BT" \
+###  --training_text ./eng.MRZ.eval.training_text \
+###  --workspace_dir ~/tmp \
+###  --output_dir ./ocrb_eval
 
-# https://github.com/tesseract-ocr/tesseract/wiki/TrainingTesseract-4.00#fine-tuning-for-impact
-
-echo "/n ****** Finetune one of the fully-trained existing models: ***********"
-
-rm -rf  ~/tesstutorial/ocrb_from_full
-mkdir  ~/tesstutorial/ocrb_from_full
-
-combine_tessdata -e ~/tessdata_best/eng.traineddata \
-  ~/tesstutorial/ocrb_from_full/eng.lstm
+###rm -rf ./ocrb
+###~/tesseract/src/training/tesstrain.sh \
+###  --fonts_dir ~/.fonts \
+###  --lang eng --linedata_only \
+###  --noextract_font_properties \
+###  --langdata_dir ~/langdata \
+###  --tessdata_dir ~/tessdata_best \
+###  --exposures "-1 0 1 2" \
+###  --save_box_tiff \
+###  --fontlist "Arial Unicode MS" "OCRB" "OCR B MT" "OCR-B 10 BT" \
+###  --training_text ./eng.MRZ.training_text \
+###  --workspace_dir ~/tmp \
+###  --output_dir ./ocrb
+###
+###echo "/n ****** Finetune plus tessdata_best/eng model ***********"
+###
+###rm -rf  ./ocrb_from_eng
+###mkdir  ./ocrb_from_eng
+###
+###combine_tessdata -e ~/tessdata_best/eng.traineddata \
+###  ~/tessdata_best/eng.lstm
   
 lstmtraining \
-  --model_output ~/tesstutorial/ocrb_from_full/ocrb_plus \
-  --traineddata ~/tesstutorial/ocrb/eng/eng.traineddata \
-  --continue_from ~/tesstutorial/ocrb_from_full/eng.lstm \
+  --model_output ./ocrb_from_eng/ocrb_plus \
+  --traineddata ./ocrb/eng/eng.traineddata \
+  --continue_from ~/tessdata_best/eng.lstm \
   --old_traineddata ~/tessdata_best/eng.traineddata \
-  --train_listfile ~/tesstutorial/ocrb/eng.training_files.txt \
+  --train_listfile ./ocrb/eng.training_files.txt \
+  --eval_listfile ./ocrb_eval/eng.training_files.txt \
   --debug_interval -1 \
-  --max_iterations 600
+  --max_iterations 3600
   
   lstmtraining \
 --stop_training \
-  --traineddata ~/tesstutorial/ocrb/eng/eng.traineddata \
-  --continue_from ~/tesstutorial/ocrb_from_full/ocrb_plus_checkpoint \
-  --model_output ~/tesstutorial/ocrb_from_full/ocrb.traineddata
+  --traineddata ./ocrb/eng/eng.traineddata \
+  --continue_from ./ocrb_from_eng/ocrb_plus_checkpoint \
+  --model_output ./ocrb_from_eng/ocrb.traineddata
+  
+cp ./ocrb_from_eng/ocrb.traineddata ./
+  
+OMP_THREAD_LIMIT=1 time lstmeval \
+  --model ./ocrb_from_eng/ocrb.traineddata \
+  --eval_listfile  ./ocrb_eval/eng.training_files.txt 
   
   lstmtraining \
 --stop_training \
   --convert_to_int \
-  --traineddata ~/tesstutorial/ocrb/eng/eng.traineddata \
-  --continue_from ~/tesstutorial/ocrb_from_full/ocrb_plus_checkpoint \
-  --model_output ~/tesstutorial/ocrb_from_full/ocrb_int.traineddata
+  --traineddata ./ocrb/eng/eng.traineddata \
+  --continue_from ./ocrb_from_eng/ocrb_plus_checkpoint \
+  --model_output ./ocrb_from_eng/ocrb_int.traineddata
   
 OMP_THREAD_LIMIT=1 time lstmeval \
-  --model ~/tesstutorial/ocrb_from_full/ocrb.traineddata \
-  --eval_listfile ~/tesstutorial/ocrb/eng.training_files.txt
-  
-OMP_THREAD_LIMIT=1 time lstmeval \
-  --model ~/tesstutorial/ocrb_from_full/ocrb_int.traineddata \
-  --eval_listfile ~/tesstutorial/ocrb/eng.training_files.txt
-  
-OMP_THREAD_LIMIT=1 time lstmeval \
-  --verbosity 0 \
-  --model ~/tessdata_best/eng.traineddata \
-  --eval_listfile ~/tesstutorial/ocrb/eng.training_files.txt
+  --model ./ocrb_from_eng/ocrb_int.traineddata \
+  --eval_listfile ./ocrb_eval/eng.training_files.txt 
 
+cp ./ocrb_from_eng/ocrb_int.traineddata ./
 
+echo "/n ****** Replace top layer in tessdata_best/eng model ***********"
+
+###rm -rf  ./ocrb_layer
+###mkdir  ./ocrb_layer
+
+lstmtraining \
+  --model_output ./ocrb_layer/ocrb_layer \
+  --traineddata ./ocrb/eng/eng.traineddata \
+  --continue_from ~/tessdata_best/eng.lstm \
+  --append_index 5 --net_spec '[Lfx128 O1c1]' \
+  --train_listfile ./ocrb/eng.training_files.txt \
+  --eval_listfile ./ocrb_eval/eng.training_files.txt  \
+  --debug_interval -1 \
+  --max_iterations 20000
+  
+  lstmtraining \
+--stop_training \
+  --traineddata ./ocrb/eng/eng.traineddata \
+  --continue_from ./ocrb_layer/ocrb_layer_checkpoint \
+  --model_output ./ocrb_layer/ocrb_layer.traineddata
+  
+OMP_THREAD_LIMIT=1 time lstmeval \
+  --model ./ocrb_layer/ocrb_layer.traineddata \
+  --eval_listfile ./ocrb_eval/eng.training_files.txt 
+
+  lstmtraining \
+--stop_training \
+--convert_to_int \
+  --traineddata ./ocrb/eng/eng.traineddata \
+  --continue_from ./ocrb_layer/ocrb_layer_checkpoint \
+  --model_output ./ocrb_layer/ocrb_layer_int.traineddata
+  
+OMP_THREAD_LIMIT=1 time lstmeval \
+  --model ./ocrb_layer/ocrb_layer_int.traineddata \
+  --eval_listfile ./ocrb_eval/eng.training_files.txt 
+  
+cp ./ocrb_layer/*layer*.traineddata ./
