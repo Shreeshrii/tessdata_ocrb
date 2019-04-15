@@ -1,0 +1,3 @@
+./ocrb_eval/eng.OCR-B_10_BT.exp0.lstmf
+./ocrb_eval/eng.OCRB.exp0.lstmf
+./ocrb_eval/eng.OCR_B_MT.exp0.lstmf
