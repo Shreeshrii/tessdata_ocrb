@@ -60,3 +60,4 @@ There are other github repos with MRZ solutions (I have not tried them).
 
 * https://github.com/konstantint/PassportEye
 * https://github.com/Exteris/tesseract-mrz
+* https://github.com/DoubangoTelecom/tesseractMRZ
